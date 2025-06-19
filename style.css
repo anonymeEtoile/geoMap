@@ -1,0 +1,243 @@
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: #f7f7f7; /* Duolingo-ish light gray */
+    color: #4c4c4c;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Align to top for longer content */
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 20px 30px;
+    border-radius: 16px; /* Duolingo's rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+}
+
+header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e5e5;
+    padding-bottom: 15px;
+}
+
+header h1 {
+    color: #58a700; /* Duolingo green */
+    font-size: 2.5em;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.duo-owl {
+    width: 50px; /* Adjust size as needed */
+    height: auto;
+    margin-right: 15px;
+}
+
+
+#mode-selection h2 {
+    color: #3c3c3c;
+    margin-bottom: 15px;
+}
+
+.continent-buttons button {
+    background-color: #58a700; /* Duolingo green */
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    margin: 5px;
+    border-radius: 12px;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    box-shadow: 0 2px 0 #468c00; /* Duolingo button shadow */
+    position: relative;
+    top: 0;
+}
+
+.continent-buttons button:hover {
+    background-color: #69c800;
+    top: -1px; /* Slight lift on hover */
+    box-shadow: 0 3px 0 #468c00;
+}
+
+.continent-buttons button:active {
+    top: 1px;
+    box-shadow: 0 1px 0 #468c00;
+}
+
+.continent-buttons button:disabled {
+    background-color: #b0b0b0;
+    cursor: not-allowed;
+    box-shadow: 0 2px 0 #8c8c8c;
+}
+
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #eef8ff; /* Light blue accent */
+    border-radius: 8px;
+}
+
+#flag-container {
+    text-align: left;
+}
+
+#flag-container p {
+    margin: 0 0 10px 0;
+    font-size: 1.1em;
+}
+
+#flag-image {
+    width: 100px;
+    height: auto;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#score-board {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #1caff6; /* Duolingo blue */
+}
+
+#map-controls {
+    margin-bottom: 10px;
+}
+
+#map-controls button {
+    background-color: #1caff6; /* Duolingo blue */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin: 0 5px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+#map-controls button:hover {
+    background-color: #4ac0f7;
+}
+
+#map-container {
+    width: 100%;
+    height: 500px; /* Adjust as needed */
+    border: 2px solid #e5e5e5;
+    overflow: hidden; /* Important for zoom/pan */
+    position: relative;
+    background-color: #d1e0ec; /* Water color */
+    border-radius: 8px;
+    cursor: grab; /* Indicate pannable */
+}
+
+#map-container:active {
+    cursor: grabbing;
+}
+
+#world-map-svg {
+    width: 100%;
+    height: 100%;
+    display: block; /* Removes extra space below SVG */
+    transform-origin: 0 0; /* For scaling from top-left */
+}
+
+#world-map-svg path {
+    fill: #b3cc57; /* Land color - Duolingo-ish green/yellow */
+    stroke: #f7f7f7; /* Country borders */
+    stroke-width: 0.5px;
+    transition: fill 0.2s ease;
+}
+
+#world-map-svg path:hover {
+    fill: #99b039; /* Darker on hover */
+}
+
+.highlight-correct {
+    fill: #78c800 !important; /* Bright green for correct */
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+.highlight-incorrect {
+    fill: #ff4b4b !important; /* Red for incorrect */
+    stroke: #fff;
+    stroke-width: 1px;
+}
+
+#feedback-message {
+    margin-top: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    min-height: 25px; /* Reserve space */
+}
+
+.feedback-correct {
+    color: #58a700;
+}
+
+.feedback-incorrect {
+    color: #ea2b2b;
+}
+
+#game-over-screen {
+    padding: 30px;
+    background-color: #eef8ff;
+    border-radius: 12px;
+}
+#game-over-screen h2 {
+    color: #58a700;
+}
+#game-over-screen p {
+    font-size: 1.2em;
+    margin: 10px 0;
+}
+#game-over-screen button {
+    background-color: #ff9600; /* Duolingo orange */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #cc7800;
+    transition: background-color 0.2s ease;
+}
+#game-over-screen button:hover {
+    background-color: #ffab33;
+}
+
+/* For smaller screens */
+@media (max-width: 768px) {
+    .game-info {
+        flex-direction: column;
+        align-items: center;
+    }
+    #flag-container {
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    #map-container {
+        height: 350px;
+    }
+     header h1 {
+        font-size: 2em;
+    }
+    .duo-owl {
+        width: 40px;
+    }
+}
