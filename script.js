@@ -16,36 +16,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalScoreDisplay = document.getElementById('final-score');
     const accuracyDisplay = document.getElementById('accuracy');
     const restartGameButton = document.getElementById('restart-game');
-    const mainMenuFromGameOverButton = document.getElementById('main-menu-from-gameover'); // Nouveau bouton
-    const backToHomeButton = document.getElementById('back-to-home'); // Nouveau bouton "Accueil"
+    const mainMenuFromGameOverButton = document.getElementById('main-menu-from-gameover'); 
+    const backToHomeButton = document.getElementById('back-to-home'); 
 
     const zoomInButton = document.getElementById('zoom-in');
     const zoomOutButton = document.getElementById('zoom-out');
     const resetZoomButton = document.getElementById('reset-zoom');
 
     // Variables de jeu
-    let allCountriesData = []; // Stocke tous les pays chargés depuis le CSV
-    let currentCountry = null; // Le pays à deviner actuellement
+    let allCountriesData = []; 
+    let currentCountry = null; 
     let score = 0;
     let correctAttempts = 0;
     let incorrectAttempts = 0;
-    let countriesToGuessForCurrentGame = []; // Liste des pays restants pour le tour de jeu
-    let currentGamemode = "world"; // Pour savoir quel mode rejouer
+    let countriesToGuessForCurrentGame = []; 
+    let currentGamemode = "world"; 
 
     // Variables de zoom et panoramique
-    let svgMap = null; // Référence à l'élément SVG de la carte
-    let originalViewBox = null; // Le viewBox original de la carte SVG
-    let currentScale = 1; // Le facteur de zoom actuel
-    let currentPanX = 0; // Position X de la vue actuelle
-    let currentPanY = 0; // Position Y de la vue actuelle
-    let isPanning = false; // Indique si l'utilisateur est en train de déplacer la carte
-    let startPanXGlobal, startPanYGlobal; // Coordonnées de départ pour le panoramique
-    const ZOOM_FACTOR = 1.2; // Facteur d'augmentation/diminution du zoom
+    let svgMap = null; 
+    let originalViewBox = null; 
+    let currentScale = 1; 
+    let currentPanX = 0; 
+    let currentPanY = 0; 
+    let isPanning = false; 
+    let startPanXGlobal, startPanYGlobal; 
+    const ZOOM_FACTOR = 1.2; 
 
     // --- MAPPING DES PAYS AUX CONTINENTS ---
     // IMPORTANT : VOUS DEVEZ COMPLÉTER CETTE LISTE AVEC TOUS VOS PAYS ET LEURS CONTINENTS.
     // Les codes sont ceux utilisés dans votre map.svg et mapping.csv.
-    // J'ai fait un gros travail pour les remplir d'après votre CSV/SVG, mais vérifiez !
+    // J'ai fait un gros travail pour les remplir d'après votre CSV/SVG, mais VÉRIFIEZ ET AJUSTEZ SI NÉCESSAIRE !
     const countryToContinentMap = {
         // Afrique (AF)
         "_somaliland": "AF", "ao": "AF", "dz": "AF", "bi": "AF", "bj": "AF", "bw": "AF", "bf": "AF",
@@ -63,14 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
         "kg": "AS", "la": "AS", "lb": "AS", "lk": "AS", "my": "AS", "mn": "AS", "mm": "AS",
         "np": "AS", "om": "AS", "pk": "AS", "ps": "AS", "ph": "AS", "qa": "AS", "sg": "AS",
         "sy": "AS", "tj": "AS", "th": "AS", "tl": "AS", "tm": "AS", "tr": "AS", "tw": "AS",
-        "uz": "AS", "vn": "AS", "ye": "AS", "kh": "AS", // Cambodge
+        "uz": "AS", "vn": "AS", "ye": "AS", "kh": "AS", 
         // Europe (EU)
         "al": "EU", "at": "EU", "by": "EU", "be": "EU", "ba": "EU", "bg": "EU", "hr": "EU",
         "cz": "EU", "dk": "EU", "ee": "EU", "fi": "EU", "fr": "EU", "de": "EU", "gr": "EU",
         "hu": "EU", "ie": "EU", "is": "EU", "it": "EU", "lv": "EU", "lt": "EU", "lu": "EU",
         "md": "EU", "me": "EU", "mk": "EU", "nl": "EU", "no": "EU", "pl": "EU", "pt": "EU",
         "ro": "EU", "rs": "EU", "ru": "EU", "si": "EU", "sk": "EU", "es": "EU", "se": "EU",
-        "ch": "EU", "ua": "EU", "gb": "EU", "mt": "EU", // Malte
+        "ch": "EU", "ua": "EU", "gb": "EU", "mt": "EU", 
         // Amérique du Nord (NA)
         "bs": "NA", "bz": "NA", "ca": "NA", "cr": "NA", "cu": "NA", "do": "NA", "sv": "NA",
         "gl": "NA", "gt": "NA", "hn": "NA", "ht": "NA", "jm": "NA", "mx": "NA", "ni": "NA",
@@ -99,30 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const csvText = await response.text();
             const rows = csvText.split('\n');
 
-            allCountriesData = []; // Réinitialise le tableau avant de le remplir
+            allCountriesData = []; 
 
-            // Itère sur les lignes, en sautant l'en-tête (première ligne)
             for (let i = 1; i < rows.length; i++) {
-                const row = rows[i].trim(); // Supprime les espaces blancs au début/fin de la ligne
-
-                if (row === "") { // Saute les lignes complètement vides
+                const row = rows[i].trim(); 
+                if (row === "") { 
                     continue;
                 }
-
-                // Sépare la ligne par la virgule, nettoie les parties et supprime les guillemets
                 const parts = row.split(',').map(part => part.trim().replace(/"/g, ''));
-
-                // Vérifie que la ligne a le bon format (2 parties et non vides)
                 if (parts.length === 2 && parts[0] && parts[1]) {
                     const countryCode = parts[0].toLowerCase();
                     allCountriesData.push({
                         code: countryCode,
                         name: parts[1],
-                        // Assigne le continent en utilisant le mapping, ou "unknown" si non trouvé
                         continent: countryToContinentMap[countryCode] || "unknown" 
                     });
                 } else {
-                    // Avertit en cas de ligne mal formée
                     console.warn(`Ligne mal formée ou incomplète ignorée dans mapping.csv (ligne ${i + 1}): "${rows[i]}"`);
                 }
             }
@@ -130,17 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allCountriesData.length === 0) {
                 console.warn("Aucun pays n'a été chargé depuis le CSV. Vérifiez le format du fichier mapping.csv.");
                 feedbackMessage.textContent = "Problème de chargement des données pays. Vérifiez mapping.csv.";
-                continentButtons.forEach(btn => btn.disabled = true); // Désactive les boutons si pas de pays
+                continentButtons.forEach(btn => btn.disabled = true); 
             } else {
                 console.log(`${allCountriesData.length} pays chargés avec succès.`);
-                // Active tous les boutons de mode de jeu une fois les données chargées
                 continentButtons.forEach(btn => btn.disabled = false);
             }
 
         } catch (error) {
             console.error("Erreur de chargement ou de parsing du CSV:", error);
             feedbackMessage.textContent = "Impossible de charger ou de parser les données des pays.";
-            continentButtons.forEach(btn => btn.disabled = true); // Désactive les boutons en cas d'erreur de chargement
+            continentButtons.forEach(btn => btn.disabled = true); 
         }
     }
 
@@ -151,21 +142,19 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('map.svg');
             const svgText = await response.text();
-            mapContainer.innerHTML = svgText; // Injecte le contenu SVG dans le DOM
+            mapContainer.innerHTML = svgText; 
             svgMap = mapContainer.querySelector('svg');
-            svgMap.id = 'world-map-svg'; // Attribue un ID pour le stylage CSS
-
-            // Récupère et parse le viewBox initial du SVG pour les opérations de zoom/pan
+            svgMap.id = 'world-map-svg'; 
+            
             originalViewBox = svgMap.getAttribute('viewBox').split(' ').map(Number);
             currentPanX = originalViewBox[0];
             currentPanY = originalViewBox[1];
 
-            // Attache un écouteur de clic à chaque chemin (représentant un pays) de la carte
             const paths = svgMap.querySelectorAll('path');
             paths.forEach(path => {
                 path.addEventListener('click', handleMapClick);
             });
-            setupZoomPan(); // Configure les fonctionnalités de zoom et panoramique
+            setupZoomPan(); 
         } catch (error) {
             console.error("Erreur de chargement du SVG:", error);
             feedbackMessage.textContent = "Impossible de charger la carte.";
@@ -181,10 +170,9 @@ document.addEventListener('DOMContentLoaded', () => {
         resetZoomButton.addEventListener('click', resetMapZoomPan);
 
         mapContainer.addEventListener('wheel', (event) => {
-            event.preventDefault(); // Empêche le défilement de la page lors du zoom
-            const factor = event.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR; // Détermine le sens du zoom
+            event.preventDefault(); 
+            const factor = event.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR; 
             const rect = mapContainer.getBoundingClientRect();
-            // Calcule la position de la souris relative au conteneur de la carte
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
             applyZoom(factor, mouseX, mouseY);
@@ -192,35 +180,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
         mapContainer.addEventListener('mousedown', (event) => {
             isPanning = true;
-            startPanXGlobal = event.clientX; // Enregistre la position X initiale de la souris
-            startPanYGlobal = event.clientY; // Enregistre la position Y initiale de la souris
-            mapContainer.style.cursor = 'grabbing'; // Change le curseur pour indiquer que la carte est attrapée
+            startPanXGlobal = event.clientX; 
+            startPanYGlobal = event.clientY; 
+            mapContainer.style.cursor = 'grabbing'; 
         });
 
         mapContainer.addEventListener('mousemove', (event) => {
-            if (!isPanning) return; // Ne fait rien si le panoramique n'est pas actif
+            if (!isPanning) return; 
             event.preventDefault();
-            // Calcule le déplacement de la souris et l'ajuste à l'échelle de zoom actuelle
             const dx = (event.clientX - startPanXGlobal) / currentScale;
             const dy = (event.clientY - startPanYGlobal) / currentScale;
             
-            // Met à jour les coordonnées du panoramique (le déplacement est inverse pour le viewBox)
             currentPanX -= dx;
             currentPanY -= dy;
             
-            updateViewBox(); // Applique les nouvelles coordonnées au SVG
+            updateViewBox();
 
-            startPanXGlobal = event.clientX; // Met à jour la position de départ pour le prochain déplacement
+            startPanXGlobal = event.clientX; 
             startPanYGlobal = event.clientY;
         });
 
         mapContainer.addEventListener('mouseup', () => {
             isPanning = false;
-            mapContainer.style.cursor = 'grab'; // Restaure le curseur par défaut
+            mapContainer.style.cursor = 'grab'; 
         });
         mapContainer.addEventListener('mouseleave', () => {
             isPanning = false;
-            mapContainer.style.cursor = 'grab'; // Restaure le curseur si la souris quitte la zone de la carte
+            mapContainer.style.cursor = 'grab'; 
         });
     }
 
@@ -232,22 +218,19 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function applyZoom(factor, mouseX = null, mouseY = null) {
         const newScale = currentScale * factor;
-        // Limite les niveaux de zoom pour éviter des échelles extrêmes
         if (newScale < 0.2 || newScale > 20) return; 
 
-        // Si les coordonnées de la souris ne sont pas fournies, zoomer vers le centre de la vue actuelle de la carte
         if (mouseX === null || mouseY === null) {
             const rect = mapContainer.getBoundingClientRect();
             mouseX = rect.width / 2;
             mouseY = rect.height / 2;
         }
 
-        // Calcule le nouvel origine du viewBox pour que le point sous la souris reste fixe après le zoom
         currentPanX = currentPanX + mouseX / currentScale - mouseX / newScale;
         currentPanY = currentPanY + mouseY / currentScale - mouseY / newScale;
         
         currentScale = newScale;
-        updateViewBox(); // Applique le nouveau viewBox au SVG
+        updateViewBox(); 
     }
     
     /**
@@ -264,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Réinitialise le zoom et le panoramique de la carte à son état initial.
      */
     function resetMapZoomPan() {
-        if (!originalViewBox) return; // S'assure que le viewBox original est défini
+        if (!originalViewBox) return; 
         currentScale = 1;
         currentPanX = originalViewBox[0];
         currentPanY = originalViewBox[1];
@@ -276,38 +259,34 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} mode - Le mode de jeu sélectionné (ex: "world", "AF", "EU").
      */
     function startGame(mode) {
-        currentGamemode = mode; // Sauvegarde le mode de jeu actuel pour "Rejouer"
+        currentGamemode = mode; 
         modeSelection.style.display = 'none';
         gameOverScreen.style.display = 'none';
         gameArea.style.display = 'block';
-        backToHomeButton.style.display = 'block'; // Affiche le bouton "Accueil"
+        backToHomeButton.style.display = 'block'; 
 
         score = 0;
         correctAttempts = 0;
         incorrectAttempts = 0;
         updateScoreboard();
         
-        // Filtre les pays en fonction du mode de jeu
         if (mode === "world") {
-            countriesToGuessForCurrentGame = [...allCountriesData]; // Tous les pays pour le mode "Monde"
+            countriesToGuessForCurrentGame = [...allCountriesData]; 
         } else {
-            // Filtre par continent
             countriesToGuessForCurrentGame = allCountriesData.filter(country => country.continent === mode);
         }
 
-        // Vérifie s'il y a des pays pour le mode sélectionné
         if (countriesToGuessForCurrentGame.length === 0) {
             feedbackMessage.textContent = `Aucun pays trouvé pour le mode ${mode}. Choisissez un autre mode.`;
             console.warn(`Aucun pays trouvé pour le continent: ${mode}. Vérifiez le mapping et les IDs SVG.`);
-            // Retourne au menu principal après un court délai si aucun pays n'est disponible
             setTimeout(showMainMenu, 3000);
             return;
         }
         
-        shuffleArray(countriesToGuessForCurrentGame); // Mélange les pays pour le jeu
+        shuffleArray(countriesToGuessForCurrentGame);
         
-        nextCountry(); // Affiche le premier pays à deviner
-        resetMapZoomPan(); // Réinitialise la vue de la carte
+        nextCountry(); 
+        resetMapZoomPan(); 
     }
 
     /**
@@ -325,19 +304,18 @@ document.addEventListener('DOMContentLoaded', () => {
      * Affiche le prochain pays à deviner et son drapeau.
      */
     function nextCountry() {
-        clearHighlights(); // Efface les mises en évidence de couleur précédentes
+        clearHighlights(); 
         if (countriesToGuessForCurrentGame.length === 0) {
-            endGame(); // Si tous les pays ont été devinés, la partie est terminée
+            endGame(); 
             return;
         }
-        currentCountry = countriesToGuessForCurrentGame.pop(); // Prend le prochain pays de la liste
+        currentCountry = countriesToGuessForCurrentGame.pop(); 
         countryNamePrompt.textContent = currentCountry.name;
-        // Gère le cas spécial de Somaliland pour le drapeau, sinon utilise le code pays standard
         const flagCode = currentCountry.code === '_somaliland' ? 'so' : currentCountry.code; 
         flagImage.src = `https://flagcdn.com/w160/${flagCode}.png`;
         flagImage.alt = `Drapeau de ${currentCountry.name}`;
-        feedbackMessage.textContent = ''; // Efface le message de feedback précédent
-        feedbackMessage.className = ''; // Supprime la classe de style du feedback
+        feedbackMessage.textContent = ''; 
+        feedbackMessage.className = ''; 
     }
 
     /**
@@ -345,41 +323,37 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {MouseEvent} event - L'objet événement de clic.
      */
     function handleMapClick(event) {
-        if (!currentCountry || !svgMap) return; // S'assure qu'un pays est à deviner et que la carte est prête
+        if (!currentCountry || !svgMap) return; 
 
-        // Trouve l'élément <path> parent le plus proche du point de clic
         const clickedPath = event.target.closest('path');
-        if (!clickedPath) return; // Si le clic n'est pas sur un pays, ne fait rien
+        if (!clickedPath) return; 
 
-        const clickedCountryId = clickedPath.id.toLowerCase(); // Récupère l'ID du pays cliqué
+        const clickedCountryId = clickedPath.id.toLowerCase();
         
-        clearHighlights(); // Efface les mises en évidence précédentes
+        clearHighlights(); 
 
         if (clickedCountryId === currentCountry.code) {
             score += 10;
             correctAttempts++;
             feedbackMessage.textContent = "Correct ! 🎉";
             feedbackMessage.className = 'feedback-correct';
-            clickedPath.classList.add('highlight-correct'); // Met en évidence le pays correctement deviné
+            clickedPath.classList.add('highlight-correct'); 
         } else {
             score -= 5;
-            if (score < 0) score = 0; // Le score ne descend pas en dessous de zéro
+            if (score < 0) score = 0; 
             incorrectAttempts++;
-            // Trouve le nom du pays réellement cliqué pour le message de feedback
             const clickedCountryObj = allCountriesData.find(c => c.code === clickedCountryId);
             const clickedName = clickedCountryObj ? clickedCountryObj.name : "une zone inconnue";
             feedbackMessage.textContent = `Oups ! C'était ${clickedName}. Le pays à trouver était ${currentCountry.name}.`;
             feedbackMessage.className = 'feedback-incorrect';
-            clickedPath.classList.add('highlight-incorrect'); // Met en évidence le pays incorrectement cliqué
+            clickedPath.classList.add('highlight-incorrect'); 
             
-            // Met également en évidence le pays correct (celui qu'il fallait trouver)
             const correctPath = svgMap.querySelector(`path#${currentCountry.code}`);
             if (correctPath) {
                 correctPath.classList.add('highlight-correct');
             }
         }
-        updateScoreboard(); // Met à jour l'affichage du score
-        // Attend un peu avant de passer au pays suivant pour laisser à l'utilisateur le temps de voir le feedback
+        updateScoreboard(); 
         setTimeout(nextCountry, 2500); 
     }
     
@@ -408,10 +382,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function endGame() {
         gameArea.style.display = 'none';
         gameOverScreen.style.display = 'block';
-        backToHomeButton.style.display = 'none'; // Cache le bouton "Accueil" sur l'écran de fin
+        backToHomeButton.style.display = 'none'; 
         finalScoreDisplay.textContent = score;
         const totalAttempts = correctAttempts + incorrectAttempts;
-        // Calcule la précision, ou 0 si aucune tentative n'a été faite
         const accuracy = totalAttempts > 0 ? ((correctAttempts / totalAttempts) * 100).toFixed(1) : 0;
         accuracyDisplay.textContent = accuracy;
     }
@@ -422,11 +395,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function showMainMenu() {
         gameArea.style.display = 'none';
         gameOverScreen.style.display = 'none';
-        modeSelection.style.display = 'block'; // Affiche l'écran de sélection de mode
-        backToHomeButton.style.display = 'none'; // Cache le bouton "Accueil"
-        feedbackMessage.textContent = ''; // Efface les messages de feedback restants
-        clearHighlights(); // S'assure que la carte est propre
-        resetMapZoomPan(); // Réinitialise la vue de la carte
+        modeSelection.style.display = 'block'; 
+        backToHomeButton.style.display = 'none'; 
+        feedbackMessage.textContent = ''; 
+        clearHighlights(); 
+        resetMapZoomPan(); 
     }
 
 
@@ -435,15 +408,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Écouteurs pour les boutons de sélection de mode (Monde, Afrique, etc.)
     continentButtons.forEach(button => {
         button.addEventListener('click', (e) => {
-            if (!e.target.disabled) { // S'assure que le bouton n'est pas désactivé
-                 startGame(e.target.dataset.mode); // Démarre le jeu avec le mode correspondant
+            if (!e.target.disabled) { 
+                 startGame(e.target.dataset.mode); 
             }
         });
     });
     
     // Écouteur pour le bouton "Rejouer" sur l'écran de fin de partie
     restartGameButton.addEventListener('click', () => {
-        startGame(currentGamemode); // Redémarre le jeu avec le mode qui était en cours
+        startGame(currentGamemode); 
     });
 
     // Écouteur pour le bouton "Menu Principal" sur l'écran de fin de partie
@@ -457,11 +430,11 @@ document.addEventListener('DOMContentLoaded', () => {
      * Fonction d'initialisation principale qui charge toutes les ressources nécessaires.
      */
     async function init() {
-        await loadCountriesData(); // Charge les données des pays depuis le CSV
-        await loadMap(); // Charge la carte SVG
+        await loadCountriesData(); 
+        await loadMap();
         // L'activation des boutons de sélection de mode se fait automatiquement dans loadCountriesData
         // une fois que les données sont chargées avec succès.
     }
 
-    init(); // Appelle la fonction d'initialisation au démarrage de la page
+    init(); 
 });
