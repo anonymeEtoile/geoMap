@@ -25,9 +25,9 @@ header {
     margin-bottom: 20px;
     border-bottom: 2px solid #e5e5e5;
     padding-bottom: 15px;
-    position: relative; /* Nécessaire pour positionner le bouton retour */
-    display: flex; /* Pour aligner le titre et le bouton retour */
-    justify-content: center; /* Centre le titre par défaut */
+    position: relative; 
+    display: flex; 
+    justify-content: center; 
     align-items: center;
 }
 
@@ -37,21 +37,20 @@ header h1 {
     margin: 0; 
     display: flex;
     align-items: center;
-    /* justify-content: center; /* Enlevé pour permettre au bouton de se positionner */
 }
 
 .duo-owl {
-    width: 50px; /* Adjust size as needed */
+    width: 50px; 
     height: auto;
     margin-right: 15px;
 }
 
-/* Style du nouveau bouton "Accueil" */
+/* Style du bouton "Accueil" */
 #back-to-home {
-    position: absolute; /* Positionnement absolu dans l'en-tête */
+    position: absolute; 
     top: 50%;
-    left: 20px; /* Position à gauche */
-    transform: translateY(-50%); /* Centrage vertical */
+    left: 20px; 
+    transform: translateY(-50%); 
     background-color: #ffc107; /* Jaune/Orange Duolingo */
     color: #4c4c4c;
     border: none;
@@ -60,13 +59,13 @@ header h1 {
     font-size: 0.9em;
     font-weight: bold;
     cursor: pointer;
-    box-shadow: 0 2px 0 #e0a800; /* Ombre de bouton Duolingo */
+    box-shadow: 0 2px 0 #e0a800; 
     transition: background-color 0.2s ease, top 0.1s ease, box-shadow 0.1s ease;
 }
 
 #back-to-home:hover {
     background-color: #ffca2c;
-    top: calc(50% - 1px); /* Slight lift on hover */
+    top: calc(50% - 1px); 
     box-shadow: 0 3px 0 #e0a800;
 }
 
@@ -92,14 +91,14 @@ header h1 {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s ease;
-    box-shadow: 0 2px 0 #468c00; /* Duolingo button shadow */
+    box-shadow: 0 2px 0 #468c00; 
     position: relative;
     top: 0;
 }
 
 .continent-buttons button:hover {
     background-color: #69c800;
-    top: -1px; /* Slight lift on hover */
+    top: -1px; 
     box-shadow: 0 3px 0 #468c00;
 }
 
@@ -166,15 +165,16 @@ header h1 {
     background-color: #4ac0f7;
 }
 
+/* --- Styles de la carte --- */
 #map-container {
     width: 100%;
-    height: 500px; /* Adjust as needed */
+    height: 500px; 
     border: 2px solid #e5e5e5;
-    overflow: hidden; /* Important for zoom/pan */
+    overflow: hidden; 
     position: relative;
-    background-color: #d1e0ec; /* Water color */
+    background-color: #87CEEB; /* Océan en bleu ciel */
     border-radius: 8px;
-    cursor: grab; /* Indicate pannable */
+    cursor: grab; 
 }
 
 #map-container:active {
@@ -184,38 +184,40 @@ header h1 {
 #world-map-svg {
     width: 100%;
     height: 100%;
-    display: block; /* Removes extra space below SVG */
-    transform-origin: 0 0; /* For scaling from top-left */
+    display: block; 
+    transform-origin: 0 0; 
 }
 
 #world-map-svg path {
-    fill: #b3cc57; /* Land color - Duolingo-ish green/yellow */
-    stroke: #f7f7f7; /* Country borders */
+    fill: #FFFFFF; /* Pays en blanc */
+    stroke: #bbbbbb; /* Bordures de pays en gris clair pour contraste */
     stroke-width: 0.5px;
     transition: fill 0.2s ease;
 }
 
 #world-map-svg path:hover {
-    fill: #99b039; /* Darker on hover */
+    fill: #f0f0f0; /* Pays légèrement grisés au survol */
 }
 
 .highlight-correct {
-    fill: #78c800 !important; /* Bright green for correct */
+    fill: #78c800 !important; /* Vert vif pour correct */
     stroke: #fff;
     stroke-width: 1px;
 }
 
 .highlight-incorrect {
-    fill: #ff4b4b !important; /* Red for incorrect */
+    fill: #ff4b4b !important; /* Rouge vif pour incorrect */
     stroke: #fff;
     stroke-width: 1px;
 }
+/* --- Fin Styles de la carte --- */
+
 
 #feedback-message {
     margin-top: 15px;
     font-size: 1.2em;
     font-weight: bold;
-    min-height: 25px; /* Reserve space */
+    min-height: 25px; 
 }
 
 .feedback-correct {
@@ -249,7 +251,7 @@ header h1 {
     cursor: pointer;
     box-shadow: 0 2px 0 #cc7800;
     transition: background-color 0.2s ease;
-    margin: 5px; /* Ajoute un peu d'espace entre les boutons de fin de partie */
+    margin: 5px; 
 }
 #game-over-screen button:hover {
     background-color: #ffab33;
@@ -270,9 +272,9 @@ header h1 {
         height: 350px;
     }
      header {
-        flex-direction: column; /* Le titre au-dessus du bouton sur mobile */
+        flex-direction: column; 
         align-items: center;
-        padding-bottom: 5px; /* Moins de padding */
+        padding-bottom: 5px; 
     }
     header h1 {
         font-size: 2em;
@@ -282,9 +284,9 @@ header h1 {
         width: 40px;
     }
     #back-to-home {
-        position: static; /* Le bouton revient dans le flux normal */
+        position: static; 
         transform: none;
         margin-top: 10px;
-        align-self: center; /* Pour le centrer si header est en colonne */
+        align-self: center; 
     }
 }
