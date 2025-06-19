@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Géo Quiz - Style Duolingo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="https://d35aaqx5ub95lt.cloudfront.net/images/splash/dd26f194091a92f871e989a3fce42afe.svg" alt="Duo Owl" class="duo-owl"> Géo Quiz Mondial</h1>
+        </header>
+
+        <section id="mode-selection">
+            <h2>Choisis ton défi :</h2>
+            <div class="continent-buttons">
+                <button data-mode="world">Monde Entier</button>
+                <button data-mode="africa" disabled>Afrique</button>
+                <button data-mode="asia" disabled>Asie</button>
+                <button data-mode="europe" disabled>Europe</button>
+                <button data-mode="north_america" disabled>Amérique du Nord</button>
+                <button data-mode="south_america" disabled>Amérique du Sud</button>
+                <button data-mode="oceania" disabled>Océanie</button>
+            </div>
+        </section>
+
+        <main id="game-area" style="display: none;">
+            <div class="game-info">
+                <div id="flag-container">
+                    <p>Place le drapeau de : <strong id="country-name-prompt"></strong></p>
+                    <img id="flag-image" src="" alt="Drapeau à deviner">
+                </div>
+                <div id="score-board">
+                    Score: <span id="score">0</span> | Correct: <span id="correct-count">0</span> | Incorrect: <span id="incorrect-count">0</span>
+                </div>
+            </div>
+
+            <div id="map-controls">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+                <button id="reset-zoom">Reset</button>
+            </div>
+            <div id="map-container">
+                <!-- SVG map will be loaded here by JavaScript -->
+            </div>
+            <div id="feedback-message"></div>
+        </main>
+        
+        <div id="game-over-screen" style="display: none;">
+            <h2>Partie Terminée !</h2>
+            <p>Ton score final : <span id="final-score">0</span></p>
+            <p>Précision : <span id="accuracy">0</span>%</p>
+            <button id="restart-game">Rejouer</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
