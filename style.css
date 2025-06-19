@@ -241,3 +241,69 @@ header h1 {
         width: 40px;
     }
 }
+/* ... (tout votre CSS existant) ... */
+
+header {
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e5e5;
+    padding-bottom: 15px;
+    position: relative; /* Pour positionner le bouton retour */
+    display: flex; /* Pour aligner le titre et le bouton retour */
+    justify-content: center; /* Centre le titre par défaut */
+    align-items: center;
+}
+
+header h1 {
+    color: #58a700; /* Duolingo green */
+    font-size: 2.5em;
+    margin: 0; /* Ajusté car flex s'en occupe */
+    display: flex;
+    align-items: center;
+    /* justify-content: center; /* Enlevé pour permettre au bouton de se positionner */
+}
+
+
+#back-to-home {
+    position: absolute;
+    top: 50%;
+    left: 20px; /* Ou right: 20px; selon votre préférence */
+    transform: translateY(-50%);
+    background-color: #ffc107; /* Jaune/Orange Duolingo */
+    color: #4c4c4c;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 10px;
+    font-size: 0.9em;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #e0a800;
+}
+
+#back-to-home:hover {
+    background-color: #ffca2c;
+}
+
+#game-over-screen button {
+    margin: 5px; /* Ajoute un peu d'espace entre les boutons */
+}
+
+
+/* Ajustement pour le header sur petits écrans si le bouton retour prend trop de place */
+@media (max-width: 768px) {
+    header {
+        flex-direction: column; /* Le titre au-dessus du bouton */
+    }
+    header h1 {
+        font-size: 2em;
+        margin-bottom: 10px; /* Espace entre titre et potentiel bouton retour */
+    }
+    .duo-owl {
+        width: 40px;
+    }
+    #back-to-home {
+        position: static; /* Le bouton revient dans le flux normal */
+        transform: none;
+        margin-top: 10px;
+        align-self: center; /* Pour le centrer si header est en colonne */
+    }
+}
