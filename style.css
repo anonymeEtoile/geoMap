@@ -1,22 +1,22 @@
 body {
     font-family: 'Nunito', sans-serif;
-    background-color: #f7f7f7;
+    background-color: #f7f7f7; /* Gris clair Duolingo */
     color: #4c4c4c;
     margin: 0;
-    padding: 10px; /* Moins de padding sur mobile */
+    padding: 10px; /* Moins de padding sur les petits écrans */
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
     box-sizing: border-box;
-    /* Empêche le "pull-to-refresh" sur mobile qui peut interférer avec le drag */
+    /* Empêche le "pull-to-refresh" ou le défilement excessif sur mobile */
     overscroll-behavior-y: contain; 
 }
 
 .container {
     background-color: #ffffff;
-    padding: 15px 20px; /* Moins de padding sur mobile */
-    border-radius: 16px;
+    padding: 15px 20px; /* Padding ajusté */
+    border-radius: 16px; /* Coins arrondis Duolingo */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 900px;
@@ -24,9 +24,9 @@ body {
 }
 
 header {
-    margin-bottom: 15px; /* Moins de marge */
+    margin-bottom: 15px; 
     border-bottom: 2px solid #e5e5e5;
-    padding-bottom: 10px; /* Moins de padding */
+    padding-bottom: 10px; 
     position: relative; 
     display: flex; 
     justify-content: center; 
@@ -34,30 +34,31 @@ header {
 }
 
 header h1 {
-    color: #58a700;
-    font-size: 2em; /* Titre plus petit sur mobile */
+    color: #58a700; /* Vert Duolingo */
+    font-size: 2em; /* Taille du titre ajustée pour mobile */
     margin: 0; 
     display: flex;
     align-items: center;
 }
 
 .duo-owl {
-    width: 40px; /* Hibou plus petit */
+    width: 40px; /* Taille du hibou ajustée */
     height: auto;
     margin-right: 10px;
 }
 
+/* Style du bouton "Accueil" */
 #back-to-home {
     position: absolute; 
     top: 50%;
-    left: 10px; /* Plus proche du bord */
+    left: 10px; /* Positionnement à gauche ajusté */
     transform: translateY(-50%); 
-    background-color: #ffc107;
+    background-color: #ffc107; /* Jaune/Orange Duolingo */
     color: #4c4c4c;
     border: none;
-    padding: 6px 10px; /* Bouton plus petit */
+    padding: 6px 10px; /* Taille du bouton ajustée */
     border-radius: 8px;
-    font-size: 0.8em; /* Texte plus petit */
+    font-size: 0.8em; 
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 2px 0 #e0a800; 
@@ -66,29 +67,36 @@ header h1 {
 
 #back-to-home:hover {
     background-color: #ffca2c;
+    top: calc(50% - 1px); 
+    box-shadow: 0 3px 0 #e0a800;
+}
+
+#back-to-home:active {
+    top: calc(50% + 1px);
+    box-shadow: 0 1px 0 #e0a800;
 }
 
 
 #mode-selection h2 {
     color: #3c3c3c;
     margin-bottom: 10px;
-    font-size: 1.2em; /* Titre plus petit */
+    font-size: 1.2em; 
 }
 
 .continent-buttons {
     display: flex;
-    flex-wrap: wrap; /* Permet aux boutons de passer à la ligne */
+    flex-wrap: wrap; /* Permet aux boutons de s'enrouler sur plusieurs lignes */
     justify-content: center; /* Centre les boutons */
 }
 
 .continent-buttons button {
-    background-color: #58a700;
+    background-color: #58a700; 
     color: white;
     border: none;
-    padding: 10px 15px; /* Boutons plus petits */
+    padding: 10px 15px; /* Taille ajustée */
     margin: 5px;
     border-radius: 10px;
-    font-size: 0.9em; /* Texte plus petit */
+    font-size: 0.9em; 
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -97,11 +105,27 @@ header h1 {
     top: 0;
 }
 
+.continent-buttons button:hover {
+    background-color: #69c800;
+    top: -1px; 
+    box-shadow: 0 3px 0 #468c00;
+}
+
+.continent-buttons button:active {
+    top: 1px;
+    box-shadow: 0 1px 0 #468c00;
+}
+
+.continent-buttons button:disabled {
+    background-color: #b0b0b0;
+    cursor: not-allowed;
+    box-shadow: 0 2px 0 #8c8c8c;
+}
 
 .game-info {
     display: flex;
     flex-direction: column; /* Passe en colonne sur mobile */
-    align-items: center; /* Centre les éléments en colonne */
+    align-items: center; 
     margin-bottom: 10px;
     padding: 8px;
     background-color: #eef8ff; 
@@ -109,8 +133,8 @@ header h1 {
 }
 
 #flag-container {
-    text-align: center; /* Centre le texte et l'image du drapeau */
-    margin-bottom: 8px; /* Espace entre drapeau et score */
+    text-align: center; 
+    margin-bottom: 8px; 
 }
 
 #flag-container p {
@@ -119,49 +143,52 @@ header h1 {
 }
 
 #flag-image {
-    width: 80px; /* Drapeau plus petit */
+    width: 80px; 
     height: auto;
-    border: 1px solid #ddd; /* Bordure plus fine */
+    border: 1px solid #ddd; 
     border-radius: 4px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 #score-board {
-    font-size: 1em; /* Score plus petit */
+    font-size: 1em; 
     font-weight: bold;
-    color: #1caff6;
+    color: #1caff6; 
 }
 
 #map-controls {
     margin-bottom: 8px;
-    display: flex; /* Pour mieux espacer les boutons de zoom */
+    display: flex; 
     justify-content: center;
 }
 
 #map-controls button {
-    background-color: #1caff6;
+    background-color: #1caff6; 
     color: white;
     border: none;
-    padding: 6px 10px; /* Boutons plus petits */
+    padding: 6px 10px; 
     margin: 0 3px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.8em; /* Texte plus petit */
+    font-size: 0.8em; 
 }
 
+#map-controls button:hover {
+    background-color: #4ac0f7;
+}
 
 /* --- Styles de la carte --- */
 #map-container {
     width: 100%;
-    /* Hauteur flexible avec aspect ratio si possible, sinon hauteur fixe plus petite */
-    height: 300px; /* Hauteur réduite pour mobile, ajustez selon besoin */
-    border: 1px solid #e5e5e5; /* Bordure plus fine */
+    height: 300px; /* Hauteur ajustée pour mobile */
+    border: 1px solid #e5e5e5; 
     overflow: hidden; 
     position: relative;
     background-color: #87CEEB; /* Océan en bleu ciel */
     border-radius: 8px;
     cursor: grab; 
-    touch-action: none; /* Important pour désactiver le défilement du navigateur pendant le drag de la carte */
+    /* TRÈS IMPORTANT pour le tactile : désactive le comportement par défaut du navigateur */
+    touch-action: none; 
 }
 
 #map-container:active {
@@ -176,25 +203,24 @@ header h1 {
 }
 
 #world-map-svg path {
-    fill: #FFFFFF; 
-    stroke: #bbbbbb; 
+    fill: #FFFFFF; /* Pays en blanc */
+    stroke: #bbbbbb; /* Bordures de pays en gris clair */
     stroke-width: 0.5px;
     transition: fill 0.2s ease;
 }
 
 #world-map-svg path:hover {
-    /* Le hover peut être moins pertinent sur tactile, mais on le garde pour desktop */
-    fill: #f0f0f0; 
+    fill: #f0f0f0; /* Pays légèrement grisés au survol (desktop) */
 }
 
 .highlight-correct {
-    fill: #78c800 !important; 
+    fill: #78c800 !important; /* Vert vif pour correct */
     stroke: #fff;
     stroke-width: 1px;
 }
 
 .highlight-incorrect {
-    fill: #ff4b4b !important; 
+    fill: #ff4b4b !important; /* Rouge vif pour incorrect */
     stroke: #fff;
     stroke-width: 1px;
 }
@@ -205,7 +231,7 @@ header h1 {
     margin-top: 10px;
     font-size: 1.1em;
     font-weight: bold;
-    min-height: 20px; 
+    min-height: 20px; /* Réserve de l'espace pour le message */
 }
 
 .feedback-correct {
@@ -223,29 +249,32 @@ header h1 {
 }
 #game-over-screen h2 {
     color: #58a700;
-    font-size: 1.5em; /* Titre plus petit */
+    font-size: 1.5em; 
 }
 #game-over-screen p {
     font-size: 1.1em;
     margin: 8px 0;
 }
 #game-over-screen button {
-    background-color: #ff9600;
+    background-color: #ff9600; /* Duolingo orange */
     color: white;
     border: none;
-    padding: 10px 20px; /* Boutons plus petits */
+    padding: 10px 20px; /* Taille ajustée */
     border-radius: 10px;
-    font-size: 1em; /* Texte plus petit */
+    font-size: 1em; 
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 2px 0 #cc7800;
     transition: background-color 0.2s ease;
     margin: 5px; 
 }
+#game-over-screen button:hover {
+    background-color: #ffab33;
+}
 
 
-/* Styles responsifs additionnels pour petits écrans si ceux d'avant ne suffisent pas */
-@media (max-width: 480px) { /* Cible les écrans encore plus petits */
+/* Styles responsifs additionnels pour les écrans encore plus petits */
+@media (max-width: 480px) { 
     .container {
         padding: 10px 15px;
     }
@@ -266,6 +295,6 @@ header h1 {
         font-size: 0.85em;
     }
     #map-container {
-        height: 250px; /* Encore plus petit si besoin */
+        height: 250px; 
     }
 }
