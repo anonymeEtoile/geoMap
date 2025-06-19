@@ -42,13 +42,31 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('mapping.csv');
             const csvText = await response.text();
             const rows = csvText.split('\n').slice(1); // Skip header
+
             countries = rows.map(row => {
-                const columns = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g).map(s => s.replace(/"/g, ''));
-                if (columns.length === 2 && columns[0] && columns[1]) {
-                    return { code: columns[0].toLowerCase(), name: columns[1] };
+                // Ignore empty lines
+                if (row.trim() === "") {
+                    return null;
                 }
-                return null;
-            }).filter(country => country !== null);
+
+                // Use the regex to match columns, handling quoted fields
+                const columnsMatch = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+
+                // Check if columnsMatch is not null and has at least 2 elements before processing
+                if (columnsMatch && columnsMatch.length >= 2) {
+                    const columns = columnsMatch.map(s => s.replace(/"/g, '')); // Remove quotes from matched strings
+                    if (columns[0] && columns[1]) { // Ensure both code and name are present
+                        return { code: columns[0].toLowerCase(), name: columns[1] };
+                    }
+                }
+                return null; // Return null for malformed or completely empty rows
+            }).filter(country => country !== null); // Filter out all null entries (empty or malformed rows)
+
+            if (countries.length === 0) {
+                console.warn("Aucun pays n'a été chargé depuis le CSV. Vérifiez le format du fichier mapping.csv.");
+                feedbackMessage.textContent = "Problème de chargement des données pays. Vérifiez mapping.csv.";
+            }
+
         } catch (error) {
             console.error("Erreur de chargement du CSV:", error);
             feedbackMessage.textContent = "Impossible de charger les données des pays.";
@@ -63,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             svgMap = mapContainer.querySelector('svg');
             svgMap.id = 'world-map-svg'; // Assign ID for CSS targeting
             
+            // Set initial viewBox based on the SVG's own viewBox attribute
             originalViewBox = svgMap.getAttribute('viewBox').split(' ').map(Number);
             currentPanX = originalViewBox[0];
             currentPanY = originalViewBox[1];
@@ -102,11 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
         mapContainer.addEventListener('mousemove', (event) => {
             if (!isPanning) return;
             event.preventDefault();
+            // Calculate movement relative to container, then scale by current zoom level
             const dx = (event.clientX - startPanX) / currentScale;
             const dy = (event.clientY - startPanY) / currentScale;
             
             // Adjust currentPanX and currentPanY based on dx, dy
-            // SVG's viewBox panning is inverse to mouse movement
+            // SVG's viewBox panning is inverse to mouse movement when directly manipulating viewBox coords
             currentPanX -= dx;
             currentPanY -= dy;
             
@@ -129,15 +149,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyZoom(factor, mouseX = null, mouseY = null) {
         const newScale = currentScale * factor;
         
-        // Optional: Clamp zoom levels
+        // Optional: Clamp zoom levels to prevent extreme zoom
         // if (newScale < 0.5 || newScale > 10) return;
 
-        if (mouseX === null) mouseX = originalViewBox[2] / 2;
-        if (mouseY === null) mouseY = originalViewBox[3] / 2;
+        // If no mouse coordinates provided, zoom towards the center of the current map view
+        if (mouseX === null || mouseY === null) {
+            const rect = mapContainer.getBoundingClientRect();
+            mouseX = rect.width / 2;
+            mouseY = rect.height / 2;
+        }
 
-        // Calculate new viewBox origin to zoom towards mouse
-        currentPanX = mouseX / currentScale - (mouseX / newScale) + currentPanX;
-        currentPanY = mouseY / currentScale - (mouseY / newScale) + currentPanY;
+        // Convert mouse coordinates relative to the map container into SVG coordinate system
+        // This calculates the new top-left corner of the viewBox to keep the mouse point fixed
+        currentPanX = currentPanX + mouseX / currentScale - mouseX / newScale;
+        currentPanY = currentPanY + mouseY / currentScale - mouseY / newScale;
         
         currentScale = newScale;
         updateViewBox();
@@ -170,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // TODO: Implement continent filtering if data is available
         // For now, "world" mode uses all countries
-        countriesToGuess = [...countries];
+        countriesToGuess = [...countries]; // Create a shallow copy
         shuffleArray(countriesToGuess);
         
         nextCountry();
@@ -190,10 +215,11 @@ document.addEventListener('DOMContentLoaded', () => {
             endGame();
             return;
         }
-        currentCountry = countriesToGuess.pop();
+        currentCountry = countriesToGuess.pop(); // Get next country from the shuffled list
         countryNamePrompt.textContent = currentCountry.name;
         // FlagCDN uses ISO 3166-1 alpha-2 codes. Special case for Somaliland.
-        const flagCode = currentCountry.code === '_somaliland' ? 'so' : currentCountry.code; // Use Somalia's flag for Somaliland or find a custom one
+        // If flagcdn.com doesn't have a flag, consider a fallback or a custom asset.
+        const flagCode = currentCountry.code === '_somaliland' ? 'so' : currentCountry.code; // Use Somalia's flag for Somaliland for now
         flagImage.src = `https://flagcdn.com/w160/${flagCode}.png`;
         flagImage.alt = `Drapeau de ${currentCountry.name}`;
         feedbackMessage.textContent = '';
@@ -203,8 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMapClick(event) {
         if (!currentCountry || !svgMap) return;
 
+        // Ensure we clicked on a path element or one of its descendants
         const clickedPath = event.target.closest('path');
-        if (!clickedPath) return;
+        if (!clickedPath) return; // If clicked on empty SVG space or non-country element
 
         const clickedCountryId = clickedPath.id.toLowerCase();
         
@@ -218,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clickedPath.classList.add('highlight-correct');
         } else {
             score -= 5;
-            if (score < 0) score = 0;
+            if (score < 0) score = 0; // Prevent negative scores
             incorrectAttempts++;
             const clickedCountryObj = countries.find(c => c.code === clickedCountryId);
             const clickedName = clickedCountryObj ? clickedCountryObj.name : "une zone inconnue";
@@ -233,7 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         updateScoreboard();
-        setTimeout(nextCountry, 2500); // Wait a bit before next country
+        // Wait a bit before loading the next country to allow user to see feedback
+        setTimeout(nextCountry, 2500); 
     }
     
     function clearHighlights() {
@@ -258,6 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
         accuracyDisplay.textContent = accuracy;
     }
 
+    // Event listeners for mode selection buttons
     continentButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             if (!e.target.disabled) {
@@ -266,15 +295,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+    // Event listener for restart game button
     restartGameButton.addEventListener('click', () => {
         gameOverScreen.style.display = 'none';
-        modeSelection.style.display = 'block';
+        modeSelection.style.display = 'block'; // Go back to mode selection
     });
 
+    // Initialize the application
     async function init() {
         await loadCountries();
         await loadMap();
-        // Enable world button once data is loaded
+        // Enable world button once data is loaded and map is ready
         const worldButton = document.querySelector('.continent-buttons button[data-mode="world"]');
         if (worldButton) worldButton.disabled = false;
     }
