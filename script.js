@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const zoomOutButton = document.getElementById('zoom-out');
     const resetZoomButton = document.getElementById('reset-zoom');
 
-    // Variables de jeu (inchangées)
+    // Variables de jeu
     let allCountriesData = []; 
     let currentCountry = null; 
     let score = 0;
@@ -38,16 +38,19 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentScale = 1; 
     let currentPanX = 0; 
     let currentPanY = 0; 
-    let isPanning = false; 
-    let startPanXGlobal, startPanYGlobal; 
+    let isPanningMouse = false; // Vrai si le panoramique est actif via la souris
+    let isPanningTouch = false; // Vrai si le panoramique est actif via 1 doigt tactile
+    let startPanXGlobal, startPanYGlobal; // Coordonnées de départ pour le panoramique (souris ou tactile)
     const ZOOM_FACTOR = 1.2; 
 
-    // Variables pour le pinch-to-zoom tactile
-    let initialPinchDistance = null;
-    let lastTouch = null; // Pour le drag à un doigt
+    // Variables pour le pinch-to-zoom tactile et pour distinguer clic/glisser
+    let initialPinchDistance = null; // Distance entre les doigts au début du pincement
+    let lastTouchPoint = null; // Dernière position du doigt pour le panoramique
+    let touchMovedSignificantly = false; // Vrai si le doigt a bougé assez pour être un drag/pinch et non un clic
+    const DRAG_THRESHOLD = 5; // Distance en pixels pour considérer un mouvement comme un drag/pinch
 
-    // --- MAPPING DES PAYS AUX CONTINENTS (Identique à la version précédente) ---
-    // (Assurez-vous qu'il est bien rempli)
+    // --- MAPPING DES PAYS AUX CONTINENTS ---
+    // IMPORTANT : ASSUREZ-VOUS QUE CETTE LISTE EST COMPLÈTE ET CORRESPOND À VOS DONNÉES !
     const countryToContinentMap = {
         // Afrique (AF)
         "_somaliland": "AF", "ao": "AF", "dz": "AF", "bi": "AF", "bj": "AF", "bw": "AF", "bf": "AF",
@@ -85,29 +88,37 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     // --- FIN MAPPING CONTINENTS ---
 
+    /**
+     * Charge les données des pays depuis le fichier mapping.csv.
+     * Cette version est plus robuste et gère l'assignation des continents.
+     */
     async function loadCountriesData() {
-        // ... (code inchangé par rapport à la version précédente) ...
         try {
             const response = await fetch('mapping.csv');
             if (!response.ok) {
                 throw new Error(`Erreur HTTP! Statut: ${response.status}`);
             }
             const csvText = await response.text();
-            const rows = csvText.split('\n');
+            const rows = csvText.split('\n'); // Divise le texte en lignes
 
-            allCountriesData = []; 
+            allCountriesData = []; // Réinitialise le tableau avant de le remplir
 
+            // Itère sur les lignes, en sautant l'en-tête (première ligne, index 0)
             for (let i = 1; i < rows.length; i++) {
-                const row = rows[i].trim(); 
-                if (row === "") { 
-                    continue;
-                }
+                const row = rows[i].trim(); // Supprime les espaces blancs inutiles
+
+                if (row === "") { continue; } // Saute les lignes vides
+
+                // Sépare la ligne par la virgule et nettoie chaque partie
                 const parts = row.split(',').map(part => part.trim().replace(/"/g, ''));
+
+                // Vérifie que nous avons bien 2 parties et qu'elles ne sont pas vides
                 if (parts.length === 2 && parts[0] && parts[1]) {
                     const countryCode = parts[0].toLowerCase();
                     allCountriesData.push({
                         code: countryCode,
                         name: parts[1],
+                        // Assigne le continent en utilisant le mapping, ou "unknown" si non trouvé
                         continent: countryToContinentMap[countryCode] || "unknown" 
                     });
                 } else {
@@ -116,23 +127,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (allCountriesData.length === 0) {
-                console.warn("Aucun pays n'a été chargé depuis le CSV. Vérifiez le format du fichier mapping.csv.");
+                console.error("ERREUR: Aucun pays n'a été chargé depuis le CSV. Les boutons de mode de jeu ne seront pas activés.");
                 feedbackMessage.textContent = "Problème de chargement des données pays. Vérifiez mapping.csv.";
                 continentButtons.forEach(btn => btn.disabled = true); 
             } else {
-                console.log(`${allCountriesData.length} pays chargés avec succès.`);
+                console.log(`${allCountriesData.length} pays chargés avec succès. Activation des boutons de mode.`);
                 continentButtons.forEach(btn => btn.disabled = false);
             }
 
         } catch (error) {
-            console.error("Erreur de chargement ou de parsing du CSV:", error);
-            feedbackMessage.textContent = "Impossible de charger ou de parser les données des pays.";
+            console.error("Erreur critique lors du chargement ou parsing du CSV:", error);
+            feedbackMessage.textContent = "Impossible de charger les données des pays.";
             continentButtons.forEach(btn => btn.disabled = true); 
         }
     }
 
+    /**
+     * Charge la carte SVG et la prépare pour l'interactivité.
+     */
     async function loadMap() {
-        // ... (code inchangé) ...
         try {
             const response = await fetch('map.svg');
             const svgText = await response.text();
@@ -140,7 +153,17 @@ document.addEventListener('DOMContentLoaded', () => {
             svgMap = mapContainer.querySelector('svg');
             svgMap.id = 'world-map-svg'; 
             
-            originalViewBox = svgMap.getAttribute('viewBox').split(' ').map(Number);
+            const viewBoxAttr = svgMap.getAttribute('viewBox');
+            if (!viewBoxAttr) {
+                console.error("L'attribut viewBox est manquant sur le SVG de la carte ! Définition d'un viewBox par défaut.");
+                const width = parseFloat(svgMap.getAttribute('width')) || 784.077; // Utiliser les valeurs de votre SVG
+                const height = parseFloat(svgMap.getAttribute('height')) || 458.627;
+                svgMap.setAttribute('viewBox', `0 0 ${width} ${height}`);
+                originalViewBox = [0, 0, width, height];
+            } else {
+                originalViewBox = viewBoxAttr.split(' ').map(Number);
+            }
+            
             currentPanX = originalViewBox[0];
             currentPanY = originalViewBox[1];
 
@@ -155,28 +178,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Calcule la distance euclidienne entre deux points de contact tactiles.
+     */
     function getDistance(touch1, touch2) {
         const dx = touch1.clientX - touch2.clientX;
         const dy = touch1.clientY - touch2.clientY;
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    function getMidpoint(touch1, touch2) {
-        return {
-            x: (touch1.clientX + touch2.clientX) / 2,
-            y: (touch1.clientY + touch2.clientY) / 2,
-        };
-    }
-
+    /**
+     * Configure les écouteurs d'événements pour le zoom (molette, pinch) et le panoramique (souris, glisser tactile).
+     */
     function setupZoomPan() {
-        // Boutons de zoom
+        // Écouteurs pour les boutons de zoom
         zoomInButton.addEventListener('click', () => applyZoom(ZOOM_FACTOR));
         zoomOutButton.addEventListener('click', () => applyZoom(1 / ZOOM_FACTOR));
         resetZoomButton.addEventListener('click', resetMapZoomPan);
 
-        // Zoom à la molette (pour desktop)
+        // --- Gestion du zoom/pan pour la souris (Desktop) ---
         mapContainer.addEventListener('wheel', (event) => {
-            event.preventDefault(); 
+            event.preventDefault(); // Empêche le défilement de la page
             const factor = event.deltaY < 0 ? ZOOM_FACTOR : 1 / ZOOM_FACTOR; 
             const rect = mapContainer.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
@@ -184,110 +206,126 @@ document.addEventListener('DOMContentLoaded', () => {
             applyZoom(factor, mouseX, mouseY);
         });
 
-        // Panoramique à la souris (pour desktop)
         mapContainer.addEventListener('mousedown', (event) => {
-            if (event.button !== 0) return; // Seulement clic gauche
-            isPanning = true;
+            if (event.button !== 0) return; // Seulement le clic gauche
+            isPanningMouse = true;
             startPanXGlobal = event.clientX; 
             startPanYGlobal = event.clientY; 
             mapContainer.style.cursor = 'grabbing'; 
         });
 
-        mapContainer.addEventListener('mousemove', (event) => {
-            if (!isPanning) return; 
-            event.preventDefault();
+        // Écouteurs sur `document` pour permettre le drag même si la souris sort du conteneur de la carte
+        document.addEventListener('mousemove', (event) => { 
+            if (!isPanningMouse) return; 
             const dx = (event.clientX - startPanXGlobal) / currentScale;
             const dy = (event.clientY - startPanYGlobal) / currentScale;
-            
             currentPanX -= dx;
             currentPanY -= dy;
-            
             updateViewBox();
-
             startPanXGlobal = event.clientX; 
             startPanYGlobal = event.clientY;
         });
 
-        mapContainer.addEventListener('mouseup', () => {
-            if (isPanning) {
-                isPanning = false;
+        document.addEventListener('mouseup', (event) => { 
+            if (isPanningMouse && event.button === 0) {
+                isPanningMouse = false;
                 mapContainer.style.cursor = 'grab'; 
             }
         });
-        mapContainer.addEventListener('mouseleave', () => {
-             if (isPanning) {
-                isPanning = false;
-                mapContainer.style.cursor = 'grab'; 
-            }
-        });
+        // Pas besoin de mouseleave sur mapContainer car mouseup est sur document
 
-
-        // --- Gestion des événements tactiles ---
+        // --- Gestion des événements tactiles (Mobile) ---
         mapContainer.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // Important pour éviter le scroll natif etc.
-            if (event.touches.length === 1) { // Panoramique à un doigt
-                isPanning = true;
-                lastTouch = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-                mapContainer.style.cursor = 'grabbing'; // Même si pas de curseur sur mobile, bonne pratique
-            } else if (event.touches.length === 2) { // Pinch to zoom
-                isPanning = false; // Arrête le pan si on passe à 2 doigts
+            // event.preventDefault() n'est PAS appelé ici pour permettre aux événements 'click' natifs
+            // sur les pays de se déclencher si c'est juste un tap et non un drag/pinch.
+            
+            // Réinitialise le drapeau de mouvement pour chaque nouveau contact tactile
+            touchMovedSignificantly = false; 
+
+            if (event.touches.length === 1) { // Un doigt : potentiel panoramique
+                isPanningTouch = true;
+                lastTouchPoint = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+            } else if (event.touches.length === 2) { // Deux doigts : potentiel pinch-to-zoom
+                isPanningTouch = false; // Désactive le panoramique si deux doigts sont utilisés
                 initialPinchDistance = getDistance(event.touches[0], event.touches[1]);
             }
-        }, { passive: false }); // passive: false est important pour pouvoir appeler preventDefault()
+        }, { passive: true }); // `passive: true` pour optimiser le défilement si preventDefault n'est pas appelé ici.
 
         mapContainer.addEventListener('touchmove', (event) => {
-            event.preventDefault();
-            if (event.touches.length === 1 && isPanning && lastTouch) { // Panoramique à un doigt
+            event.preventDefault(); // IMPORTANT : Empêche le défilement/zoom natif du navigateur sur la carte
+            
+            // Détermine si un mouvement significatif a eu lieu
+            if (event.touches.length === 1 && lastTouchPoint) {
+                const currentX = event.touches[0].clientX;
+                const currentY = event.touches[0].clientY;
+                const dist = Math.sqrt(Math.pow(currentX - lastTouchPoint.x, 2) + Math.pow(currentY - lastTouchPoint.y, 2));
+                if (dist > DRAG_THRESHOLD) {
+                    touchMovedSignificantly = true;
+                }
+            } else if (event.touches.length === 2 && initialPinchDistance !== null) {
+                touchMovedSignificantly = true; // Un pincement est toujours un mouvement significatif
+            }
+
+            if (event.touches.length === 1 && isPanningTouch && lastTouchPoint) { 
                 const touch = event.touches[0];
-                const dx = (touch.clientX - lastTouch.x) / currentScale;
-                const dy = (touch.clientY - lastTouch.y) / currentScale;
+                const dx = (touch.clientX - lastTouchPoint.x) / currentScale;
+                const dy = (touch.clientY - lastTouchPoint.y) / currentScale;
                 
                 currentPanX -= dx;
                 currentPanY -= dy;
                 updateViewBox();
 
-                lastTouch = { x: touch.clientX, y: touch.clientY };
+                lastTouchPoint = { x: touch.clientX, y: touch.clientY };
 
-            } else if (event.touches.length === 2 && initialPinchDistance !== null) { // Pinch to zoom
+            } else if (event.touches.length === 2 && initialPinchDistance !== null) { 
                 const currentPinchDistance = getDistance(event.touches[0], event.touches[1]);
                 const scaleFactor = currentPinchDistance / initialPinchDistance;
                 
-                const midpoint = getMidpoint(event.touches[0], event.touches[1]);
+                // Pour le zoom tactile, on zoome par rapport au centre visible du conteneur de la carte pour simplifier
                 const rect = mapContainer.getBoundingClientRect();
-                const pinchCenterX = midpoint.x - rect.left;
-                const pinchCenterY = midpoint.y - rect.top;
+                const pinchCenterX = rect.width / 2;
+                const pinchCenterY = rect.height / 2;
 
                 applyZoom(scaleFactor, pinchCenterX, pinchCenterY);
-                
-                initialPinchDistance = currentPinchDistance; // Met à jour pour le prochain mouvement
+                initialPinchDistance = currentPinchDistance; // Met à jour la distance pour le prochain delta de mouvement
             }
-        }, { passive: false });
+        }, { passive: false }); // `passive: false` pour pouvoir appeler preventDefault()
 
         mapContainer.addEventListener('touchend', (event) => {
-            // event.preventDefault(); // Peut parfois causer des problèmes avec les clics si trop agressif
+            // event.preventDefault() n'est PAS appelé ici pour ne pas bloquer le 'click' natif si c'était un tap
+            
+            // Réinitialise les variables de pinch-to-zoom
             if (event.touches.length < 2) {
-                initialPinchDistance = null; // Reset pinch distance
+                initialPinchDistance = null; 
             }
+            // Réinitialise les variables de panoramique tactile
             if (event.touches.length < 1) {
-                isPanning = false;
-                lastTouch = null;
-                mapContainer.style.cursor = 'grab';
+                isPanningTouch = false;
+                lastTouchPoint = null;
             }
+            // `touchMovedSignificantly` est géré dans handleMapClick pour le distinguer du tap
         });
     }
 
-
+    /**
+     * Applique un facteur de zoom à la carte.
+     * @param {number} factor - Facteur de multiplication (ex: 1.2 pour zoom in, 1/1.2 pour zoom out).
+     * @param {number} [pointX=null] - Coordonnée X (relative au conteneur de la carte) vers laquelle zoomer.
+     * @param {number} [pointY=null] - Coordonnée Y (relative au conteneur de la carte) vers laquelle zoomer.
+     */
     function applyZoom(factor, pointX = null, pointY = null) {
-        // ... (code inchangé) ...
+        if (!originalViewBox) return; // Protection au cas où viewBox n'est pas encore défini
         const newScale = currentScale * factor;
-        if (newScale < 0.2 || newScale > 20) return; 
+        if (newScale < 0.2 || newScale > 20) return; // Limite le zoom pour éviter des échelles extrêmes
 
+        // Si aucun point n'est fourni, zoomer vers le centre du conteneur de la carte
         if (pointX === null || pointY === null) {
             const rect = mapContainer.getBoundingClientRect();
             pointX = rect.width / 2;
             pointY = rect.height / 2;
         }
 
+        // Calcule le nouvel origine du viewBox pour que le point (pointX, pointY) reste fixe après le zoom
         currentPanX = currentPanX + pointX / currentScale - pointX / newScale;
         currentPanY = currentPanY + pointY / currentScale - pointY / newScale;
         
@@ -295,25 +333,35 @@ document.addEventListener('DOMContentLoaded', () => {
         updateViewBox(); 
     }
     
+    /**
+     * Met à jour l'attribut viewBox de la carte SVG avec les valeurs de zoom et panoramique actuelles.
+     */
     function updateViewBox() {
-        // ... (code inchangé) ...
         if (!svgMap || !originalViewBox) return;
         const newWidth = originalViewBox[2] / currentScale;
         const newHeight = originalViewBox[3] / currentScale;
         svgMap.setAttribute('viewBox', `${currentPanX} ${currentPanY} ${newWidth} ${newHeight}`);
     }
 
+    /**
+     * Réinitialise le zoom et le panoramique de la carte à son état initial.
+     */
     function resetMapZoomPan() {
-        // ... (code inchangé) ...
-        if (!originalViewBox) return; 
+        if (!originalViewBox) {
+            console.warn("Tentative de réinitialiser le zoom avant que originalViewBox ne soit défini. Ignoré.");
+            return; 
+        }
         currentScale = 1;
         currentPanX = originalViewBox[0];
         currentPanY = originalViewBox[1];
         updateViewBox();
     }
 
+    /**
+     * Démarre une nouvelle partie du jeu en fonction du mode sélectionné.
+     */
     function startGame(mode) {
-        // ... (code inchangé) ...
+        console.log(`Démarrage du jeu en mode: ${mode}`);
         currentGamemode = mode; 
         modeSelection.style.display = 'none';
         gameOverScreen.style.display = 'none';
@@ -328,32 +376,36 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mode === "world") {
             countriesToGuessForCurrentGame = [...allCountriesData]; 
         } else {
+            // Filtre les pays par continent
             countriesToGuessForCurrentGame = allCountriesData.filter(country => country.continent === mode);
         }
 
         if (countriesToGuessForCurrentGame.length === 0) {
             feedbackMessage.textContent = `Aucun pays trouvé pour le mode ${mode}. Choisissez un autre mode.`;
-            console.warn(`Aucun pays trouvé pour le continent: ${mode}. Vérifiez le mapping et les IDs SVG.`);
+            console.warn(`Aucun pays trouvé pour le continent: ${mode}. Vérifiez le mapping des continents ou les IDs SVG.`);
             setTimeout(showMainMenu, 3000);
             return;
         }
         
-        shuffleArray(countriesToGuessForCurrentGame);
-        
-        nextCountry(); 
-        resetMapZoomPan(); 
+        shuffleArray(countriesToGuessForCurrentGame); // Mélange les pays
+        nextCountry(); // Affiche le premier pays
+        resetMapZoomPan(); // Réinitialise la vue de la carte
     }
 
+    /**
+     * Mélange un tableau en place (algorithme de Fisher-Yates).
+     */
     function shuffleArray(array) {
-        // ... (code inchangé) ...
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
 
+    /**
+     * Affiche le prochain pays à deviner et son drapeau.
+     */
     function nextCountry() {
-        // ... (code inchangé) ...
         clearHighlights(); 
         if (countriesToGuessForCurrentGame.length === 0) {
             endGame(); 
@@ -368,18 +420,23 @@ document.addEventListener('DOMContentLoaded', () => {
         feedbackMessage.className = ''; 
     }
 
+    /**
+     * Gère le clic de l'utilisateur sur la carte pour deviner un pays.
+     */
     function handleMapClick(event) {
-        // ... (code inchangé) ...
-        // Important: S'assurer que le drag/pinch ne déclenche pas un clic de pays
-        // On pourrait ajouter une vérification ici si on a bougé ou zoomé beaucoup
-        // Mais pour l'instant, on garde simple.
-        if (!currentCountry || !svgMap) return; 
+        // Si c'est un événement tactile et qu'un mouvement significatif a été détecté,
+        // on l'ignore car ce n'est pas un simple "tap" (clic).
+        if (event.type.startsWith('touch') && touchMovedSignificantly) {
+            // Réinitialiser le drapeau pour le prochain contact tactile
+            touchMovedSignificantly = false; 
+            return; 
+        }
 
+        if (!currentCountry || !svgMap) return; 
         const clickedPath = event.target.closest('path');
         if (!clickedPath) return; 
 
         const clickedCountryId = clickedPath.id.toLowerCase();
-        
         clearHighlights(); 
 
         if (clickedCountryId === currentCountry.code) {
@@ -407,23 +464,29 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(nextCountry, 2500); 
     }
     
+    /**
+     * Efface toutes les mises en évidence de couleur des pays sur la carte.
+     */
     function clearHighlights() {
-        // ... (code inchangé) ...
         if (!svgMap) return;
         svgMap.querySelectorAll('path.highlight-correct, path.highlight-incorrect').forEach(p => {
-            p.classList.remove('highlight-correct', 'highlight-incorrect');
+            p.classList.remove('highlight-correct', 'incorrect-highlight');
         });
     }
 
+    /**
+     * Met à jour l'affichage du score et des compteurs de tentatives.
+     */
     function updateScoreboard() {
-        // ... (code inchangé) ...
         scoreDisplay.textContent = score;
         correctCountDisplay.textContent = correctAttempts;
         incorrectCountDisplay.textContent = incorrectAttempts;
     }
 
+    /**
+     * Termine la partie et affiche l'écran de fin de partie.
+     */
     function endGame() {
-        // ... (code inchangé) ...
         gameArea.style.display = 'none';
         gameOverScreen.style.display = 'block';
         backToHomeButton.style.display = 'none'; 
@@ -433,28 +496,55 @@ document.addEventListener('DOMContentLoaded', () => {
         accuracyDisplay.textContent = accuracy;
     }
 
+    /**
+     * Cache les écrans de jeu/fin de partie et affiche la sélection de mode.
+     */
     function showMainMenu() {
-        // ... (code inchangé) ...
         gameArea.style.display = 'none';
         gameOverScreen.style.display = 'none';
         modeSelection.style.display = 'block'; 
         backToHomeButton.style.display = 'none'; 
         feedbackMessage.textContent = ''; 
-        clearHighlights(); 
-        resetMapZoomPan(); 
+        
+        // S'assurer que la carte est chargée avant de tenter de la manipuler
+        if(svgMap && originalViewBox) { 
+            clearHighlights(); 
+            resetMapZoomPan(); 
+        }
     }
 
 
-    // --- Écouteurs d'événements --- (inchangés)
-    continentButtons.forEach(button => { /* ... */ });
-    restartGameButton.addEventListener('click', () => { /* ... */ });
+    // --- Écouteurs d'événements des boutons ---
+    
+    // Écouteurs pour les boutons de sélection de mode (Monde, Afrique, etc.)
+    continentButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            if (!e.target.disabled) { 
+                 startGame(e.target.dataset.mode); 
+            }
+        });
+    });
+    
+    // Écouteur pour le bouton "Rejouer" sur l'écran de fin de partie
+    restartGameButton.addEventListener('click', () => {
+        startGame(currentGamemode); 
+    });
+
+    // Écouteur pour le bouton "Menu Principal" sur l'écran de fin de partie
     mainMenuFromGameOverButton.addEventListener('click', showMainMenu);
+
+    // Écouteur pour le bouton "Accueil" dans l'en-tête (visible pendant le jeu)
     backToHomeButton.addEventListener('click', showMainMenu);
 
+
+    /**
+     * Fonction d'initialisation principale qui charge toutes les ressources nécessaires.
+     */
     async function init() {
-        // ... (code inchangé) ...
-        await loadCountriesData(); 
-        await loadMap();
+        console.log("Démarrage de l'initialisation...");
+        await loadCountriesData(); // Charge les données des pays
+        await loadMap(); // Charge la carte SVG
+        console.log("Initialisation terminée. Prêt à jouer !");
     }
 
     init(); 
