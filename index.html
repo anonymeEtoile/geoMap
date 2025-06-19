@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoFlag - Apprends la géographie !</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #58cc02, #89e219);
+            min-height: 100vh;
+            color: #4b4b4b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .game-area {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .continent-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .continent-btn {
+            background: linear-gradient(135deg, #ff9600, #ffb800);
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .continent-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 150, 0, 0.4);
+        }
+
+        .continent-btn.active {
+            background: linear-gradient(135deg, #58cc02, #89e219);
+        }
+        .continent-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .game-content {
+            display: none;
+        }
+
+        .game-content.active {
+            display: block;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #1cb0f6, #40c4ff);
+            border-radius: 15px;
+            color: white;
+        }
+
+        .score {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .lives {
+            display: flex;
+            gap: 5px;
+        }
+
+        .heart {
+            font-size: 1.5em;
+            color: #ff4757;
+        }
+
+        .heart.lost {
+            opacity: 0.3;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: 1fr 300px; /* Adjusted for potentially wider map */
+            gap: 30px;
+            min-height: 500px;
+        }
+
+        .map-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 10px; /* Reduced padding */
+            position: relative;
+            border: 3px solid #ddd; /* Solid border for loaded map */
+            transition: all 0.3s ease;
+            overflow: hidden; /* Important for SVG scaling */
+        }
+
+        .map-container.drag-over-map { /* Specific class for map drag over */
+            border-color: #58cc02;
+            background: #f0fff0;
+        }
+
+        .map-svg {
+            width: 100%;
+            height: 100%;
+            min-height: 450px; /* Or adjust as needed */
+        }
+
+        /* Styling for SVG paths */
+        .map-svg path {
+            fill: #D3D3D3; /* Light grey for countries */
+            stroke: #FFFFFF; /* White borders */
+            stroke-width: 0.5; /* Thinner stroke */
+            transition: fill 0.3s ease;
+        }
+
+        .map-svg path.highlight-correct {
+            fill: #58cc02 !important; /* Green for correct */
+        }
+        .map-svg path.highlight-incorrect-target {
+            fill: #ffdd59 !important; /* Yellow for showing correct location on miss */
+        }
+        .map-svg path.drag-over-path {
+             fill: #a9ffa9; /* Light green when dragging over a path */
+        }
+
+
+        .flag-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .current-flag {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .flag {
+            width: 120px;
+            height: 80px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            cursor: grab;
+            transition: all 0.3s ease;
+            border: 3px solid #ddd;
+        }
+
+        .flag:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .flag.dragging {
+            cursor: grabbing;
+            opacity: 0.7;
+            transform: rotate(5deg);
+        }
+
+        .country-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4b4b4b;
+            margin-top: 15px;
+        }
+
+        .feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            z-index: 1000;
+            animation: feedbackPop 2s ease forwards; /* Ensure it stays at the end state */
+        }
+
+        .feedback.correct {
+            background: linear-gradient(135deg, #58cc02, #89e219);
+        }
+
+        .feedback.incorrect {
+            background: linear-gradient(135deg, #ff4757, #ff6b7d);
+        }
+
+        @keyframes feedbackPop {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            40% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            80% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .next-btn {
+            background: linear-gradient(135deg, #58cc02, #89e219);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(88, 204, 2, 0.4);
+        }
+         .next-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #58cc02, #89e219);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+        #loadingMessage {
+            text-align: center;
+            font-size: 1.2em;
+            padding: 20px;
+            color: #4b4b4b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 GeoFlag</h1>
+            <p>Apprends la géographie en plaçant les drapeaux sur la carte !</p>
+        </div>
+
+        <div class="game-area">
+            <div id="loadingMessage">Chargement des données du jeu...</div>
+            <div class="progress-bar" style="display:none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="continent-selector" id="continentSelector" style="display:none;">
+                <button class="continent-btn" data-continent="monde" disabled>🌍 Monde</button>
+                <button class="continent-btn" data-continent="europe" disabled>🇪🇺 Europe (Monde)</button>
+                <button class="continent-btn" data-continent="asie" disabled>🌏 Asie (Monde)</button>
+                <button class="continent-btn" data-continent="afrique" disabled>🌍 Afrique (Monde)</button>
+                <button class="continent-btn" data-continent="amerique" disabled>🌎 Amérique (Monde)</button>
+                <button class="continent-btn" data-continent="oceanie" disabled>🇦🇺 Océanie (Monde)</button>
+            </div>
+
+            <div class="game-content" id="gameContent">
+                <div class="game-header">
+                    <div class="score">Score: <span id="score">0</span></div>
+                    <div class="lives" id="lives">
+                        <span class="heart">❤️</span>
+                        <span class="heart">❤️</span>
+                        <span class="heart">❤️</span>
+                    </div>
+                </div>
+
+                <div class="game-board">
+                    <div class="map-container" id="mapContainer">
+                        <svg class="map-svg" id="mapSvg" preserveAspectRatio="xMidYMid meet">
+                            <!-- SVG map will be loaded here -->
+                        </svg>
+                    </div>
+
+                    <div class="flag-panel">
+                        <div class="current-flag">
+                            <img class="flag" id="currentFlag" src="" alt="Drapeau à placer" draggable="true">
+                            <div class="country-name" id="countryName">Pays à trouver</div>
+                        </div>
+                        <button class="next-btn" id="nextBtn" style="display: none;">Suivant →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GeoFlagGame {
+            constructor() {
+                this.score = 0;
+                this.lives = 3;
+                this.currentQuestionIndex = 0;
+                this.totalQuestions = 10; // Number of questions per game
+                this.currentContinent = null;
+                this.currentCountry = null;
+                
+                this.allCountriesData = []; // To store {code, name, svgId, flagUrl}
+                this.gameCountriesPool = []; // Countries for the current game session
+                this.usedCountryCodes = []; // Codes of countries already asked in current game
+
+                this.svgMapContent = null;
+                this.mapSvgElement = document.getElementById('mapSvg');
+                this.mapContainerElement = document.getElementById('mapContainer');
+                this.currentFlagElement = document.getElementById('currentFlag');
+                this.nextBtnElement = document.getElementById('nextBtn');
+                
+                this.draggedFlagData = null; // To store data about the flag being dragged
+
+                this.loadAssetsAndInitialize();
+            }
+
+            async loadAssetsAndInitialize() {
+                try {
+                    const [mapResponse, csvResponse] = await Promise.all([
+                        fetch('map.svg'), // Assuming map.svg is in the same directory
+                        fetch('mapping.csv') // Assuming mapping.csv is in the same directory
+                    ]);
+
+                    if (!mapResponse.ok) throw new Error(`Failed to load map.svg: ${mapResponse.statusText}`);
+                    if (!csvResponse.ok) throw new Error(`Failed to load mapping.csv: ${csvResponse.statusText}`);
+
+                    this.svgMapContent = await mapResponse.text();
+                    const csvText = await csvResponse.text();
+                    
+                    this.parseCsvData(csvText);
+                    
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('continentSelector').style.display = 'grid';
+                     document.querySelectorAll('.continent-btn').forEach(btn => btn.disabled = false);
+                    document.querySelector('.progress-bar').style.display = 'block';
+
+
+                    this.bindContinentSelectors();
+                    this.bindGlobalDragEvents();
+
+                } catch (error) {
+                    console.error("Error loading game assets:", error);
+                    document.getElementById('loadingMessage').textContent = `Erreur de chargement: ${error.message}. Vérifiez la console.`;
+                }
+            }
+
+            parseCsvData(csvText) {
+                const lines = csvText.trim().split('\n');
+                const header = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+                const countryCodeIndex = header.indexOf("Country Code");
+                const countryNameIndex = header.indexOf("Country Name");
+
+                for (let i = 1; i < lines.length; i++) {
+                    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                    const code = values[countryCodeIndex];
+                    const name = values[countryNameIndex];
+                    if (code && name) {
+                        this.allCountriesData.push({
+                            code: code,
+                            name: name,
+                            svgId: code, // Assuming SVG ID is same as country code
+                            flagUrl: `https://flagcdn.com/w320/${code.replace(/^_/, '')}.png` // Remove leading underscore for flagcdn
+                        });
+                    }
+                }
+                console.log(`Loaded ${this.allCountriesData.length} countries from CSV.`);
+            }
+
+            bindContinentSelectors() {
+                document.getElementById('continentSelector').addEventListener('click', (e) => {
+                    if (e.target.classList.contains('continent-btn') && !e.target.disabled) {
+                        this.selectContinent(e.target.dataset.continent);
+                    }
+                });
+            }
+            
+            bindGlobalDragEvents() {
+                this.currentFlagElement.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', this.currentCountry.code); // Store country code
+                    this.currentFlagElement.classList.add('dragging');
+                    this.draggedFlagData = this.currentCountry; // Keep track of what's dragged
+                });
+
+                this.currentFlagElement.addEventListener('dragend', () => {
+                    this.currentFlagElement.classList.remove('dragging');
+                    this.draggedFlagData = null;
+                     // Clean up any path highlights if drag ends outside a valid target
+                    this.mapSvgElement.querySelectorAll('path.drag-over-path').forEach(p => p.classList.remove('drag-over-path'));
+                    this.mapContainerElement.classList.remove('drag-over-map');
+                });
+
+                // General drag over for the map container (for visual feedback)
+                this.mapContainerElement.addEventListener('dragover', (e) => {
+                    e.preventDefault(); // Necessary to allow drop
+                    this.mapContainerElement.classList.add('drag-over-map');
+                });
+                this.mapContainerElement.addEventListener('dragleave', (e) => {
+                    // Only remove if not entering a child path
+                    if (!e.relatedTarget || !this.mapContainerElement.contains(e.relatedTarget)) {
+                         this.mapContainerElement.classList.remove('drag-over-map');
+                    }
+                });
+                this.mapContainerElement.addEventListener('drop', (e) => { // Catch drops on container (misses)
+                    e.preventDefault();
+                    this.mapContainerElement.classList.remove('drag-over-map');
+                    if (this.draggedFlagData) { // Check if a flag was being dragged
+                        this.incorrectAnswer(null); // Dropped on map but not on a country or wrong country
+                    }
+                });
+            }
+
+            selectContinent(continent) {
+                this.currentContinent = continent;
+                console.log("Selected continent (filter):", continent); // For now, all continents show world map
+                
+                this.score = 0;
+                this.lives = 3;
+                this.currentQuestionIndex = 0;
+                this.usedCountryCodes = [];
+
+                // Filter countries (Example: if we had continent data for countries)
+                // For now, "monde" means all countries. Other buttons will behave same for this demo.
+                this.gameCountriesPool = [...this.allCountriesData.filter(c => {
+                    const pathEl = this.mapSvgElement.getElementById(c.svgId); // Check if SVG path exists
+                    return pathEl; // Only include countries with a visual representation
+                })];
+
+                if(this.gameCountriesPool.length < this.totalQuestions) {
+                    this.totalQuestions = this.gameCountriesPool.length;
+                    if(this.totalQuestions === 0) {
+                        this.showFeedback("Aucun pays disponible pour ce mode.", "incorrect");
+                        return;
+                    }
+                }
+
+
+                document.querySelectorAll('.continent-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-continent="${continent}"]`).classList.add('active');
+                
+                document.getElementById('continentSelector').style.display = 'none';
+                document.getElementById('gameContent').classList.add('active');
+                
+                this.updateScore();
+                this.updateLives();
+                this.drawMap(); // This will also bind path events
+                this.nextQuestion();
+            }
+
+            drawMap() {
+                this.mapSvgElement.innerHTML = this.svgMapContent;
+                // Set the viewBox from the loaded SVG if it has one, otherwise use a default
+                const loadedSvgRoot = this.mapSvgElement.querySelector('svg');
+                if (loadedSvgRoot && loadedSvgRoot.getAttribute('viewBox')) {
+                    this.mapSvgElement.setAttribute('viewBox', loadedSvgRoot.getAttribute('viewBox'));
+                } else {
+                     this.mapSvgElement.setAttribute('viewBox', '30.767 241.591 784.077 458.627'); // Fallback from map.svg
+                }
+                this.bindMapPathEvents();
+            }
+            
+            bindMapPathEvents() {
+                const paths = this.mapSvgElement.querySelectorAll('path[id]');
+                paths.forEach(path => {
+                    path.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation(); // Prevent mapContainer's dragover
+                        path.classList.add('drag-over-path');
+                        this.mapContainerElement.classList.add('drag-over-map'); // Also keep container highlight
+                    });
+                    path.addEventListener('dragleave', (e) => {
+                        e.stopPropagation();
+                        path.classList.remove('drag-over-path');
+                         // If leaving to outside the map container, remove its highlight too
+                        if (!this.mapContainerElement.contains(e.relatedTarget)) {
+                            this.mapContainerElement.classList.remove('drag-over-map');
+                        }
+                    });
+                    path.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation(); // Important!
+                        path.classList.remove('drag-over-path');
+                        this.mapContainerElement.classList.remove('drag-over-map');
+                        
+                        const droppedCountryCode = e.dataTransfer.getData('text/plain');
+                        const targetPathId = path.id;
+
+                        if (this.draggedFlagData && this.draggedFlagData.code === droppedCountryCode && targetPathId === this.currentCountry.svgId) {
+                            this.checkAnswer(targetPathId);
+                        } else {
+                            this.incorrectAnswer(targetPathId); // Dropped on a path, but wrong one or wrong flag
+                        }
+                    });
+                });
+            }
+
+            nextQuestion() {
+                if (this.currentQuestionIndex >= this.totalQuestions || this.gameCountriesPool.length === 0) {
+                    this.endGame();
+                    return;
+                }
+
+                // Clear previous highlights
+                this.mapSvgElement.querySelectorAll('.highlight-correct, .highlight-incorrect-target').forEach(el => {
+                    el.classList.remove('highlight-correct', 'highlight-incorrect-target');
+                });
+
+
+                let availableCountries = this.gameCountriesPool.filter(
+                    country => !this.usedCountryCodes.includes(country.code)
+                );
+
+                if (availableCountries.length === 0) { // All countries in pool used, reset if needed or end
+                    if(this.usedCountryCodes.length < this.totalQuestions) { // Not enough unique countries for totalQuestions
+                         console.warn("Not enough unique countries for the game. Re-using countries or ending early.");
+                         // For simplicity, let's allow reuse if totalQuestions > unique countries.
+                         // Or, adjust totalQuestions in selectContinent. (Done already)
+                    }
+                    this.endGame(); // Or could reset usedCountryCodes and continue if we want endless mode
+                    return;
+                }
+                
+                const randomIndex = Math.floor(Math.random() * availableCountries.length);
+                this.currentCountry = availableCountries[randomIndex];
+                this.usedCountryCodes.push(this.currentCountry.code);
+
+                this.currentFlagElement.src = this.currentCountry.flagUrl;
+                this.currentFlagElement.alt = `Drapeau de ${this.currentCountry.name}`;
+                document.getElementById('countryName').textContent = this.currentCountry.name;
+                this.nextBtnElement.style.display = 'none';
+                this.nextBtnElement.disabled = true;
+                this.currentFlagElement.draggable = true;
+
+                this.updateProgress();
+            }
+            
+            checkAnswer(targetPathId) {
+                if (targetPathId === this.currentCountry.svgId) {
+                    this.correctAnswer();
+                } else {
+                    this.incorrectAnswer(targetPathId); // targetPathId is the ID of the wrong country path it was dropped on
+                }
+            }
+
+            correctAnswer() {
+                this.score += 100;
+                this.currentQuestionIndex++;
+                this.updateScore();
+                this.showFeedback('Parfait ! 🎉', 'correct');
+                this.showCountryLocation(true); // Highlight correctly placed country
+                
+                this.currentFlagElement.draggable = false;
+                this.nextBtnElement.style.display = 'block';
+                this.nextBtnElement.disabled = false;
+
+            }
+
+            incorrectAnswer(droppedOnPathId) {
+                this.lives--;
+                this.updateLives();
+                
+                if (droppedOnPathId && droppedOnPathId !== this.currentCountry.svgId) {
+                    const wrongCountryName = this.allCountriesData.find(c => c.svgId === droppedOnPathId)?.name || "cette zone";
+                     this.showFeedback(`Oups! C'est ${wrongCountryName}, pas ${this.currentCountry.name}.`, 'incorrect');
+                } else {
+                     this.showFeedback('Pas tout à fait ! Réessayez. 💪', 'incorrect');
+                }
+                
+                this.currentFlagElement.draggable = false; // Prevent re-dragging same flag after mistake shown
+                
+                if (this.lives <= 0) {
+                    this.showCountryLocation(false); // Show correct location
+                    setTimeout(() => this.endGame(), 2500); // Give time to see feedback and location
+                } else {
+                    // Don't show next button immediately on incorrect if lives > 0, to encourage learning or a retry mechanism (not implemented here)
+                    // For this game, let's proceed to next question after showing correct location.
+                     this.showCountryLocation(false);
+                     this.nextBtnElement.style.display = 'block';
+                     this.nextBtnElement.disabled = false;
+                     this.currentQuestionIndex++; // Count incorrect attempt as a question progression
+                }
+            }
+
+            showCountryLocation(isCorrect) {
+                const countryPath = this.mapSvgElement.getElementById(this.currentCountry.svgId);
+                if (countryPath) {
+                    if (isCorrect) {
+                        countryPath.classList.add('highlight-correct');
+                    } else {
+                        countryPath.classList.add('highlight-incorrect-target');
+                    }
+                }
+            }
+
+            showFeedback(message, type) {
+                // Remove any existing feedback
+                const existingFeedback = document.querySelector('.feedback');
+                if (existingFeedback) {
+                    existingFeedback.remove();
+                }
+
+                const feedback = document.createElement('div');
+                feedback.className = `feedback ${type}`;
+                feedback.textContent = message;
+                document.body.appendChild(feedback);
+                
+                setTimeout(() => {
+                    feedback.remove();
+                }, 2000); // Feedback auto-hides
+            }
+
+            updateScore() {
+                document.getElementById('score').textContent = this.score;
+            }
+
+            updateLives() {
+                const hearts = document.querySelectorAll('#lives .heart');
+                hearts.forEach((heart, index) => {
+                    if (index >= this.lives) {
+                        heart.classList.add('lost');
+                    } else {
+                        heart.classList.remove('lost');
+                    }
+                });
+            }
+
+            updateProgress() {
+                const progress = this.totalQuestions > 0 ? (this.currentQuestionIndex / this.totalQuestions) * 100 : 0;
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+
+            endGame() {
+                this.currentFlagElement.draggable = false;
+                this.nextBtnElement.style.display = 'none';
+                this.nextBtnElement.disabled = true;
+
+                const message = this.lives > 0 ? 
+                    `Félicitations ! Score final: ${this.score}` : 
+                    `Partie terminée ! Score: ${this.score}`;
+                
+                this.showFeedback(message, this.lives > 0 ? 'correct' : 'incorrect');
+                
+                setTimeout(() => {
+                    document.getElementById('gameContent').classList.remove('active');
+                    document.getElementById('continentSelector').style.display = 'grid';
+                    document.querySelectorAll('.continent-btn').forEach(btn => btn.classList.remove('active'));
+                    this.updateProgress(); // Show final progress (should be 100% or less if ended early)
+                }, 3000);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new GeoFlagGame();
+        });
+    </script>
+</body>
+</html>
